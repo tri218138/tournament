@@ -179,11 +179,61 @@ class Tournament {
     toJSON() {
         return {
             originalTeams: this.originalTeams,
-            matches: this.matches
+            requiredTeams: this.requiredTeams,
+            rounds: this.rounds,
+            matches: this.matches.map(round => 
+                round.map(match => ({
+                    id: match.id,
+                    team1: {
+                        name: match.team1.name,
+                        score: match.team1.score || 0,
+                        id: match.team1.id,
+                        isBye: match.team1.isBye || false
+                    },
+                    team2: {
+                        name: match.team2.name,
+                        score: match.team2.score || 0,
+                        id: match.team2.id,
+                        isBye: match.team2.isBye || false
+                    },
+                    winner: match.winner ? {
+                        name: match.winner.name,
+                        score: match.winner.score || 0,
+                        id: match.winner.id,
+                        isBye: match.winner.isBye || false
+                    } : null
+                }))
+            )
         };
     }
 
     static fromJSON(data) {
-        return new Tournament(data.originalTeams, true, data.matches);
+        const tournament = new Tournament(data.originalTeams, true);
+        tournament.requiredTeams = data.requiredTeams;
+        tournament.rounds = data.rounds;
+        tournament.matches = data.matches.map(round =>
+            round.map(match => ({
+                id: match.id,
+                team1: {
+                    name: match.team1.name,
+                    score: match.team1.score || 0,
+                    id: match.team1.id,
+                    isBye: match.team1.isBye || false
+                },
+                team2: {
+                    name: match.team2.name,
+                    score: match.team2.score || 0,
+                    id: match.team2.id,
+                    isBye: match.team2.isBye || false
+                },
+                winner: match.winner ? {
+                    name: match.winner.name,
+                    score: match.winner.score || 0,
+                    id: match.winner.id,
+                    isBye: match.winner.isBye || false
+                } : null
+            }))
+        );
+        return tournament;
     }
 } 

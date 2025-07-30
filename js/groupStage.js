@@ -174,17 +174,76 @@ class GroupStage {
         return {
             teams: this.teams,
             groupCount: this.groupCount,
-            groups: this.groups,
-            matches: this.matches,
-            standings: this.standings
+            groups: this.groups.map(group => ({
+                name: group.name,
+                teams: group.teams
+            })),
+            matches: this.matches.map(groupMatches => ({
+                group: groupMatches.group,
+                matches: groupMatches.matches.map(match => ({
+                    group: match.group,
+                    team1: match.team1,
+                    team2: match.team2,
+                    score1: match.score1,
+                    score2: match.score2,
+                    played: match.played
+                }))
+            })),
+            standings: Object.fromEntries(
+                Object.entries(this.standings).map(([groupName, standings]) => [
+                    groupName,
+                    standings.map(team => ({
+                        team: team.team,
+                        played: team.played,
+                        won: team.won,
+                        drawn: team.drawn,
+                        lost: team.lost,
+                        goalsFor: team.goalsFor,
+                        goalsAgainst: team.goalsAgainst,
+                        goalDifference: team.goalDifference,
+                        points: team.points
+                    }))
+                ])
+            )
         };
     }
 
     static fromJSON(data) {
         const groupStage = new GroupStage(data.teams, data.groupCount);
-        groupStage.groups = data.groups;
-        groupStage.matches = data.matches;
-        groupStage.standings = data.standings;
+        groupStage.groups = data.groups.map(group => ({
+            name: group.name,
+            teams: group.teams
+        }));
+
+        groupStage.matches = data.matches.map(groupMatches => ({
+            group: groupMatches.group,
+            matches: groupMatches.matches.map(match => ({
+                group: match.group,
+                team1: match.team1,
+                team2: match.team2,
+                score1: match.score1,
+                score2: match.score2,
+                played: match.played
+            }))
+        }));
+
+        groupStage.standings = Object.fromEntries(
+            Object.entries(data.standings).map(([groupName, standings]) => [
+                groupName,
+                standings.map(team => ({
+                    team: team.team,
+                    played: team.played,
+                    won: team.won,
+                    drawn: team.drawn,
+                    lost: team.lost,
+                    goalsFor: team.goalsFor,
+                    goalsAgainst: team.goalsAgainst,
+                    goalDifference: team.goalDifference,
+                    points: team.points
+                }))
+            ])
+        );
+
         return groupStage;
     }
 } 
