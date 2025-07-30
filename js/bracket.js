@@ -80,20 +80,22 @@ class BracketRenderer {
             currentRound.forEach((match, matchIndex) => {
                 const prevMatch1 = previousRound[matchIndex * 2];
                 const prevMatch2 = previousRound[matchIndex * 2 + 1];
+                const oldTeam1 = match.team1;
+                const oldTeam2 = match.team2;
 
                 // Cập nhật team1 từ trận trước
                 if (prevMatch1?.winner) {
                     match.team1 = {
                         name: prevMatch1.winner.name,
-                        score: 0,
-                        id: generateTeamId(match.id, 1),
+                        score: oldTeam1?.score || 0,
+                        id: prevMatch1.winner.id,  // Giữ nguyên ID của đội thắng
                         isBye: prevMatch1.winner.isBye
                     };
                 } else {
                     match.team1 = {
                         name: null,
-                        score: 0,
-                        id: generateTeamId(match.id, 1)
+                        score: oldTeam1?.score || 0,
+                        id: oldTeam1?.id || generateTeamId(match.id, 1)
                     };
                 }
 
@@ -101,20 +103,22 @@ class BracketRenderer {
                 if (prevMatch2?.winner) {
                     match.team2 = {
                         name: prevMatch2.winner.name,
-                        score: 0,
-                        id: generateTeamId(match.id, 2),
+                        score: oldTeam2?.score || 0,
+                        id: prevMatch2.winner.id,  // Giữ nguyên ID của đội thắng
                         isBye: prevMatch2.winner.isBye
                     };
                 } else {
                     match.team2 = {
                         name: null,
-                        score: 0,
-                        id: generateTeamId(match.id, 2)
+                        score: oldTeam2?.score || 0,
+                        id: oldTeam2?.id || generateTeamId(match.id, 2)
                     };
                 }
 
-                // Reset winner
-                match.winner = null;
+                // Reset winner chỉ khi các đội thay đổi
+                if (oldTeam1?.name !== match.team1?.name || oldTeam2?.name !== match.team2?.name) {
+                    match.winner = null;
+                }
 
                 // Tự động xử lý các trận có đội bye
                 if (match.team1?.isBye && !match.team2?.isBye) {
