@@ -92,30 +92,86 @@ class BracketRenderer {
         matches.forEach((match, index) => {
             const matchElement = document.createElement('div');
             matchElement.className = 'group-match';
-            matchElement.innerHTML = `
-                <div class="match-teams">
-                    <span class="team-name">${match.team1}</span>
-                    <input type="number" value="${match.score1 !== null ? match.score1 : ''}" min="0" 
-                        data-group="${group.name}" data-match="${index}" data-team="1">
-                    <span>-</span>
-                    <input type="number" value="${match.score2 !== null ? match.score2 : ''}" min="0"
-                        data-group="${group.name}" data-match="${index}" data-team="2">
-                    <span class="team-name">${match.team2}</span>
-                </div>
-            `;
+
+            // Tạo container cho trận đấu
+            const matchTeamsElement = document.createElement('div');
+            matchTeamsElement.className = 'match-teams';
+
+            // Team 1
+            const team1Name = document.createElement('span');
+            team1Name.className = 'team-name';
+            team1Name.textContent = match.team1;
+            matchTeamsElement.appendChild(team1Name);
+
+            // Score 1
+            const score1Input = document.createElement('input');
+            score1Input.type = 'number';
+            score1Input.min = '0';
+            score1Input.step = '1';
+            score1Input.value = match.score1 !== null ? match.score1 : '';
+            score1Input.dataset.group = group.name;
+            score1Input.dataset.match = index;
+            score1Input.dataset.team = '1';
+            if (match.team1.startsWith('Bye ')) {
+                score1Input.disabled = true;
+            }
+            matchTeamsElement.appendChild(score1Input);
+
+            // Separator
+            const separator = document.createElement('span');
+            separator.textContent = '-';
+            matchTeamsElement.appendChild(separator);
+
+            // Score 2
+            const score2Input = document.createElement('input');
+            score2Input.type = 'number';
+            score2Input.min = '0';
+            score2Input.step = '1';
+            score2Input.value = match.score2 !== null ? match.score2 : '';
+            score2Input.dataset.group = group.name;
+            score2Input.dataset.match = index;
+            score2Input.dataset.team = '2';
+            if (match.team2.startsWith('Bye ')) {
+                score2Input.disabled = true;
+            }
+            matchTeamsElement.appendChild(score2Input);
+
+            // Team 2
+            const team2Name = document.createElement('span');
+            team2Name.className = 'team-name';
+            team2Name.textContent = match.team2;
+            matchTeamsElement.appendChild(team2Name);
+
+            matchElement.appendChild(matchTeamsElement);
 
             // Add event listeners for score inputs
-            const inputs = matchElement.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('change', (e) => {
-                    const groupName = e.target.dataset.group;
-                    const matchIndex = parseInt(e.target.dataset.match);
-                    const score1 = parseInt(inputs[0].value) || 0;
-                    const score2 = parseInt(inputs[1].value) || 0;
-                    
-                    this.groupStage.updateMatch(groupName, matchIndex, score1, score2);
-                    this.render();
-                });
+            const updateScores = () => {
+                // Lấy giá trị từ input và chuyển đổi sang số
+                let score1 = score1Input.value.trim();
+                let score2 = score2Input.value.trim();
+
+                // Chuyển đổi sang số nguyên
+                score1 = score1 === '' ? 0 : parseInt(score1, 10);
+                score2 = score2 === '' ? 0 : parseInt(score2, 10);
+
+                // Kiểm tra tính hợp lệ
+                if (isNaN(score1) || isNaN(score2)) {
+                    return;
+                }
+
+                // Kiểm tra nếu có đội bye thì không cập nhật
+                if (match.team1.startsWith('Bye ') || match.team2.startsWith('Bye ')) {
+                    return;
+                }
+
+                this.groupStage.updateMatch(group.name, index, score1, score2);
+                this.render();
+            };
+
+            // Sử dụng cả input và change event để đảm bảo bắt được mọi thay đổi
+            [score1Input, score2Input].forEach(input => {
+                input.addEventListener('input', updateScores);
+                input.addEventListener('change', updateScores);
             });
 
             matchesElement.appendChild(matchElement);
@@ -192,7 +248,7 @@ class BracketRenderer {
 
             teamElement.innerHTML = `
                 <span class="team-name">${team.name}</span>
-                <input type="number" class="score-input" value="${team.score || ''}" min="0" ${team.isBye ? 'disabled' : ''}>
+                <input type="number" class="score-input" value="${team.score || ''}" min="0" step="1" ${team.isBye ? 'disabled' : ''}>
             `;
 
             // Thêm các class và event listeners cho team element
@@ -204,12 +260,22 @@ class BracketRenderer {
 
             // Event listener cho điểm số
             const scoreInput = teamElement.querySelector('.score-input');
-            scoreInput.addEventListener('change', (e) => {
+            const updateKnockoutScores = () => {
                 if (team.isBye) return;
 
-                const score1 = parseInt(matchElement.querySelector(`[data-team-id="${match.team1.id}"] .score-input`).value) || 0;
-                const score2 = parseInt(matchElement.querySelector(`[data-team-id="${match.team2.id}"] .score-input`).value) || 0;
-                
+                const score1Input = matchElement.querySelector(`[data-team-id="${match.team1.id}"] .score-input`);
+                const score2Input = matchElement.querySelector(`[data-team-id="${match.team2.id}"] .score-input`);
+
+                let score1 = score1Input.value.trim();
+                let score2 = score2Input.value.trim();
+
+                score1 = score1 === '' ? 0 : parseInt(score1, 10);
+                score2 = score2 === '' ? 0 : parseInt(score2, 10);
+
+                if (isNaN(score1) || isNaN(score2)) {
+                    return;
+                }
+
                 if (score1 !== score2) {
                     const winner = score1 > score2 ? match.team1 : match.team2;
                     if (!winner.isBye) {
@@ -217,7 +283,10 @@ class BracketRenderer {
                         this.render();
                     }
                 }
-            });
+            };
+
+            scoreInput.addEventListener('input', updateKnockoutScores);
+            scoreInput.addEventListener('change', updateKnockoutScores);
 
             // Event listener cho click vào team
             teamElement.addEventListener('click', (e) => {

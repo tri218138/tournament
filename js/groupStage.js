@@ -83,18 +83,27 @@ class GroupStage {
     }
 
     updateMatch(groupName, matchIndex, score1, score2) {
-        const groupMatches = this.matches.find(g => g.group === groupName).matches;
-        const match = groupMatches[matchIndex];
+        const groupMatches = this.matches.find(g => g.group === groupName);
+        if (!groupMatches) return;
 
-        if (!match.played) {
-            match.score1 = score1;
-            match.score2 = score2;
-            match.played = true;
-            this.updateStandings(groupName, match);
+        const match = groupMatches.matches[matchIndex];
+        if (!match) return;
+
+        // Nếu trận đấu đã được cập nhật trước đó, trừ lại các chỉ số cũ
+        if (match.played) {
+            this.updateStandingsForMatch(groupName, match, match.score1, match.score2, true);
         }
+
+        // Cập nhật điểm số mới
+        match.score1 = score1;
+        match.score2 = score2;
+        match.played = true;
+
+        // Cập nhật bảng xếp hạng với điểm số mới
+        this.updateStandingsForMatch(groupName, match, score1, score2, false);
     }
 
-    updateStandings(groupName, match) {
+    updateStandingsForMatch(groupName, match, score1, score2, isReverting) {
         const groupStandings = this.standings[groupName];
         const team1Stats = groupStandings.find(s => s.team === match.team1);
         const team2Stats = groupStandings.find(s => s.team === match.team2);
@@ -104,28 +113,31 @@ class GroupStage {
             return;
         }
 
-        // Cập nhật thống kê cho cả hai đội
-        team1Stats.played++;
-        team2Stats.played++;
-        team1Stats.goalsFor += match.score1;
-        team1Stats.goalsAgainst += match.score2;
-        team2Stats.goalsFor += match.score2;
-        team2Stats.goalsAgainst += match.score1;
+        const multiplier = isReverting ? -1 : 1;
 
-        // Xác định kết quả trận đấu
-        if (match.score1 > match.score2) {
-            team1Stats.won++;
-            team2Stats.lost++;
-            team1Stats.points += 3;
-        } else if (match.score1 < match.score2) {
-            team2Stats.won++;
-            team1Stats.lost++;
-            team2Stats.points += 3;
+        // Cập nhật số trận đã đấu
+        team1Stats.played += 1 * multiplier;
+        team2Stats.played += 1 * multiplier;
+
+        // Cập nhật bàn thắng/bàn thua
+        team1Stats.goalsFor += score1 * multiplier;
+        team1Stats.goalsAgainst += score2 * multiplier;
+        team2Stats.goalsFor += score2 * multiplier;
+        team2Stats.goalsAgainst += score1 * multiplier;
+
+        // Cập nhật kết quả trận đấu
+        if (score1 > score2) {
+            team1Stats.won += 1 * multiplier;
+            team2Stats.lost += 1 * multiplier;
+            team1Stats.points += 3 * multiplier;
+        } else if (score1 < score2) {
+            team2Stats.won += 1 * multiplier;
+            team1Stats.lost += 1 * multiplier;
+            team2Stats.points += 3 * multiplier;
         } else {
-            team1Stats.drawn++;
-            team2Stats.drawn++;
-            team1Stats.points += 1;
-            team2Stats.points += 1;
+            team1Stats.drawn += 1 * multiplier;
+            team2Stats.drawn += 1 * multiplier;
+            team1Stats.points += 1 * multiplier;
         }
 
         // Cập nhật hiệu số bàn thắng
