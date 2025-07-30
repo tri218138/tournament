@@ -17,6 +17,9 @@ class BracketRenderer {
             const connector = document.createElement('div');
             connector.className = 'round-connector';
             this.container.appendChild(connector);
+
+            // Cập nhật các đội vào vòng loại trực tiếp
+            this.updateQualifiedTeams();
         }
 
         // Render vòng loại trực tiếp
@@ -24,6 +27,46 @@ class BracketRenderer {
             const roundElement = this.createRoundElement(round, roundIndex);
             this.container.appendChild(roundElement);
         });
+    }
+
+    updateQualifiedTeams() {
+        if (!this.groupStage || !this.tournament || !this.tournament.matches.length) return;
+
+        // Lấy các đội đã vượt qua vòng bảng
+        const qualifiedTeams = this.groupStage.getTopTeams(2);
+        const firstRound = this.tournament.matches[0];
+
+        // Cập nhật các cặp đấu vòng đầu tiên
+        firstRound.forEach((match, index) => {
+            if (index * 2 < qualifiedTeams.length) {
+                match.team1 = {
+                    name: qualifiedTeams[index * 2],
+                    score: 0,
+                    id: generateTeamId(match.id, 1),
+                    isBye: false
+                };
+            }
+            if (index * 2 + 1 < qualifiedTeams.length) {
+                match.team2 = {
+                    name: qualifiedTeams[index * 2 + 1],
+                    score: 0,
+                    id: generateTeamId(match.id, 2),
+                    isBye: false
+                };
+            }
+
+            // Reset winner nếu có
+            match.winner = null;
+        });
+
+        // Reset các vòng tiếp theo
+        for (let i = 1; i < this.tournament.matches.length; i++) {
+            this.tournament.matches[i].forEach(match => {
+                match.team1 = { name: null, score: 0, id: generateTeamId(match.id, 1) };
+                match.team2 = { name: null, score: 0, id: generateTeamId(match.id, 2) };
+                match.winner = null;
+            });
+        }
     }
 
     createGroupRounds() {
