@@ -60,6 +60,19 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(team => team.length > 0);
     }
 
+    function updateKnockoutStage() {
+        if (!groupStage || !tournament) return;
+
+        const qualifiedCount = parseInt(qualifiedCountSelect.value);
+        const qualifiedTeams = groupStage.getTopTeams(qualifiedCount);
+        
+        // Tạo giải đấu mới với các đội đã vượt qua vòng bảng
+        tournament = new Tournament(qualifiedTeams, true);
+        bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage, qualifiedCount);
+        bracketRenderer.render();
+        saveData();
+    }
+
     // Load saved data from localStorage
     const loadSavedData = () => {
         const savedData = localStorage.getItem('tournamentData');
@@ -79,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (data.tournament) {
                     tournament = Tournament.fromJSON(data.tournament);
-                    bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage);
+                    bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage, qualifiedCountSelect.value);
                     bracketRenderer.render();
                 }
 
@@ -153,14 +166,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Tạo giải đấu loại trực tiếp với số đội đứng đầu mỗi bảng
             const qualifiedTeams = groupStage.getTopTeams(qualifiedCount);
+            if (qualifiedTeams.length === 0) {
+                alert('Không có đủ đội để tạo vòng loại trực tiếp!');
+                return;
+            }
             tournament = new Tournament(qualifiedTeams, true);
+            bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage, qualifiedCount);
         } else {
             // Tạo giải đấu loại trực tiếp với tất cả các đội
             groupStage = null;
             tournament = new Tournament(teams, true);
+            bracketRenderer = new BracketRenderer(tournament, bracketContainer);
         }
 
-        bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage);
         bracketRenderer.render();
         saveData();
     });
@@ -221,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (data.tournament) {
                     tournament = Tournament.fromJSON(data.tournament);
-                    bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage);
+                    bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage, qualifiedCountSelect.value);
                     bracketRenderer.render();
                 }
 

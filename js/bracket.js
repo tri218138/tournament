@@ -1,8 +1,9 @@
 class BracketRenderer {
-    constructor(tournament, container, groupStage = null) {
+    constructor(tournament, container, groupStage = null, qualifiedCount = 2) {
         this.tournament = tournament;
         this.container = container;
         this.groupStage = groupStage;
+        this.qualifiedCount = qualifiedCount;
     }
 
     render() {
@@ -33,7 +34,7 @@ class BracketRenderer {
         if (!this.groupStage || !this.tournament || !this.tournament.matches.length) return;
 
         // Lấy các đội đã vượt qua vòng bảng
-        const qualifiedTeams = this.groupStage.getTopTeams(2);
+        const qualifiedTeams = this.groupStage.getTopTeams(this.qualifiedCount);
         const firstRound = this.tournament.matches[0];
 
         // Cập nhật các cặp đấu vòng đầu tiên
@@ -46,7 +47,7 @@ class BracketRenderer {
                     name: qualifiedTeams[index * 2],
                     score: oldTeam1?.score || 0,
                     id: oldTeam1?.id || generateTeamId(match.id, 1),
-                    isBye: false
+                    isBye: qualifiedTeams[index * 2].startsWith('Bye ')
                 };
             }
             if (index * 2 + 1 < qualifiedTeams.length) {
@@ -54,7 +55,7 @@ class BracketRenderer {
                     name: qualifiedTeams[index * 2 + 1],
                     score: oldTeam2?.score || 0,
                     id: oldTeam2?.id || generateTeamId(match.id, 2),
-                    isBye: false
+                    isBye: qualifiedTeams[index * 2 + 1].startsWith('Bye ')
                 };
             }
 
@@ -62,36 +63,66 @@ class BracketRenderer {
             if (oldTeam1?.name !== match.team1?.name || oldTeam2?.name !== match.team2?.name) {
                 match.winner = null;
             }
+
+            // Tự động xử lý các trận có đội bye
+            if (match.team1?.isBye && !match.team2?.isBye) {
+                match.winner = match.team2;
+            } else if (!match.team1?.isBye && match.team2?.isBye) {
+                match.winner = match.team1;
+            }
         });
 
-        // Reset các vòng tiếp theo chỉ khi cần thiết
-        let needReset = false;
-        for (const match of firstRound) {
-            if (!match.winner) {
-                needReset = true;
-                break;
-            }
-        }
+        // Cập nhật các vòng tiếp theo nếu cần
+        for (let i = 1; i < this.tournament.matches.length; i++) {
+            const currentRound = this.tournament.matches[i];
+            const previousRound = this.tournament.matches[i - 1];
 
-        if (needReset) {
-            for (let i = 1; i < this.tournament.matches.length; i++) {
-                this.tournament.matches[i].forEach(match => {
-                    const oldTeam1 = match.team1;
-                    const oldTeam2 = match.team2;
+            currentRound.forEach((match, matchIndex) => {
+                const prevMatch1 = previousRound[matchIndex * 2];
+                const prevMatch2 = previousRound[matchIndex * 2 + 1];
 
+                // Cập nhật team1 từ trận trước
+                if (prevMatch1?.winner) {
+                    match.team1 = {
+                        name: prevMatch1.winner.name,
+                        score: 0,
+                        id: generateTeamId(match.id, 1),
+                        isBye: prevMatch1.winner.isBye
+                    };
+                } else {
                     match.team1 = {
                         name: null,
-                        score: oldTeam1?.score || 0,
-                        id: oldTeam1?.id || generateTeamId(match.id, 1)
+                        score: 0,
+                        id: generateTeamId(match.id, 1)
                     };
+                }
+
+                // Cập nhật team2 từ trận trước
+                if (prevMatch2?.winner) {
+                    match.team2 = {
+                        name: prevMatch2.winner.name,
+                        score: 0,
+                        id: generateTeamId(match.id, 2),
+                        isBye: prevMatch2.winner.isBye
+                    };
+                } else {
                     match.team2 = {
                         name: null,
-                        score: oldTeam2?.score || 0,
-                        id: oldTeam2?.id || generateTeamId(match.id, 2)
+                        score: 0,
+                        id: generateTeamId(match.id, 2)
                     };
-                    match.winner = null;
-                });
-            }
+                }
+
+                // Reset winner
+                match.winner = null;
+
+                // Tự động xử lý các trận có đội bye
+                if (match.team1?.isBye && !match.team2?.isBye) {
+                    match.winner = match.team2;
+                } else if (!match.team1?.isBye && match.team2?.isBye) {
+                    match.winner = match.team1;
+                }
+            });
         }
     }
 
@@ -251,7 +282,7 @@ class BracketRenderer {
 
     isTeamQualified(team, groupName) {
         const standings = this.groupStage.standings[groupName];
-        return standings.indexOf(team) < 2; // 2 đội đứng đầu
+        return standings.indexOf(team) < this.qualifiedCount; // 2 đội đứng đầu
     }
 
     createRoundElement(round, roundIndex) {
