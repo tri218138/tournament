@@ -11,6 +11,17 @@
         <div class="input-section">
             <h2>Nhập danh sách đội thi đấu</h2>
             <textarea id="teamInput" rows="10" placeholder="Nhập tên các đội, mỗi đội một dòng"></textarea>
+            <div class="tournament-options">
+                <label>
+                    <input type="checkbox" id="useGroupStage"> Sử dụng vòng bảng
+                </label>
+                <div id="groupStageOptions" class="hidden">
+                    <p>Số đội mỗi bảng: <span id="teamsPerGroup">4</span></p>
+                    <div class="group-preview">
+                        <div class="group-list"></div>
+                    </div>
+                </div>
+            </div>
             <div class="button-group">
                 <button id="shuffleTeams">Xáo trộn danh sách</button>
                 <button id="generateBracket">Tạo sơ đồ thi đấu</button>
@@ -28,6 +39,7 @@
     <script src="js/utils.js"></script>
     <script src="js/tournament.js"></script>
     <script src="js/bracket.js"></script>
+    <script src="js/groupStage.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html> 

@@ -7,9 +7,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const importButton = document.getElementById('importData');
     const importFile = document.getElementById('importFile');
     const bracketContainer = document.getElementById('bracketContainer');
+    const useGroupStageCheckbox = document.getElementById('useGroupStage');
+    const groupStageOptions = document.getElementById('groupStageOptions');
 
     let tournament = null;
     let bracketRenderer = null;
+    let groupStage = null;
+
+    // Toggle group stage options
+    useGroupStageCheckbox.addEventListener('change', () => {
+        groupStageOptions.classList.toggle('hidden', !useGroupStageCheckbox.checked);
+        previewGroups();
+    });
+
+    // Preview groups when teams change
+    teamInput.addEventListener('input', () => {
+        if (useGroupStageCheckbox.checked) {
+            previewGroups();
+        }
+    });
+
+    function previewGroups() {
+        const teams = getTeamsList();
+        if (teams.length < 2) return;
+
+        const tempGroupStage = new GroupStage(teams);
+        const groupList = document.querySelector('.group-list');
+        groupList.innerHTML = '';
+
+        tempGroupStage.groups.forEach(group => {
+            const groupElement = document.createElement('div');
+            groupElement.className = 'group';
+            groupElement.innerHTML = `
+                <h4>Bảng ${group.name}</h4>
+                ${group.teams.map(team => `<div class="group-team">${team}</div>`).join('')}
+            `;
+            groupList.appendChild(groupElement);
+        });
+    }
+
+    function getTeamsList() {
+        return teamInput.value
+            .split('\n')
+            .map(team => team.trim())
+            .filter(team => team.length > 0);
+    }
 
     // Load saved data from localStorage
     const loadSavedData = () => {
@@ -20,10 +62,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = JSON.parse(savedData);
                 teamInput.value = data.teams;
                 
+                if (data.useGroupStage) {
+                    useGroupStageCheckbox.checked = true;
+                    groupStageOptions.classList.remove('hidden');
+                    groupStage = GroupStage.fromJSON(data.groupStage);
+                }
+                
                 if (data.tournament) {
                     tournament = Tournament.fromJSON(data.tournament);
-                    bracketRenderer = new BracketRenderer(tournament, bracketContainer);
+                    bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage);
                     bracketRenderer.render();
+                }
+
+                if (useGroupStageCheckbox.checked) {
+                    previewGroups();
                 }
             } catch (e) {
                 console.error('Error loading saved tournament:', e);
@@ -36,6 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveData = () => {
         const data = {
             teams: teamInput.value,
+            useGroupStage: useGroupStageCheckbox.checked,
+            groupStage: groupStage ? groupStage.toJSON() : null,
             tournament: tournament ? tournament.toJSON() : null
         };
         localStorage.setItem('tournamentData', JSON.stringify(data));
@@ -47,54 +101,66 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('tournamentData');
             teamInput.value = '';
             tournament = null;
+            groupStage = null;
             bracketContainer.innerHTML = '';
+            useGroupStageCheckbox.checked = false;
+            groupStageOptions.classList.add('hidden');
         }
     });
 
     // Shuffle teams
     shuffleButton.addEventListener('click', () => {
-        const teams = teamInput.value
-            .split('\n')
-            .map(team => team.trim())
-            .filter(team => team.length > 0);
-
+        const teams = getTeamsList();
         if (teams.length < 2) {
             alert('Vui lòng nhập ít nhất 2 đội!');
             return;
         }
 
         teamInput.value = shuffleArray([...teams]).join('\n');
+        if (useGroupStageCheckbox.checked) {
+            previewGroups();
+        }
         saveData();
     });
 
     // Generate bracket
     generateButton.addEventListener('click', () => {
-        const teams = teamInput.value
-            .split('\n')
-            .map(team => team.trim())
-            .filter(team => team.length > 0);
-
+        const teams = getTeamsList();
         if (teams.length < 2) {
             alert('Vui lòng nhập ít nhất 2 đội!');
             return;
         }
 
-        tournament = new Tournament(teams, true);
-        bracketRenderer = new BracketRenderer(tournament, bracketContainer);
+        if (useGroupStageCheckbox.checked) {
+            // Khởi tạo vòng bảng
+            groupStage = new GroupStage(teams);
+            
+            // Tạo giải đấu loại trực tiếp với 2 đội đứng đầu mỗi bảng
+            const qualifiedTeams = groupStage.getTopTeams(2);
+            tournament = new Tournament(qualifiedTeams, true);
+        } else {
+            // Tạo giải đấu loại trực tiếp với tất cả các đội
+            groupStage = null;
+            tournament = new Tournament(teams, true);
+        }
+
+        bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage);
         bracketRenderer.render();
         saveData();
     });
 
     // Export tournament data
     exportButton.addEventListener('click', () => {
-        if (!tournament) {
+        if (!tournament && !groupStage) {
             alert('Chưa có dữ liệu giải đấu để xuất!');
             return;
         }
 
         const data = {
             teams: teamInput.value,
-            tournament: tournament.toJSON()
+            useGroupStage: useGroupStageCheckbox.checked,
+            groupStage: groupStage ? groupStage.toJSON() : null,
+            tournament: tournament ? tournament.toJSON() : null
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -122,9 +188,27 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const data = JSON.parse(e.target.result);
                 teamInput.value = data.teams;
-                tournament = Tournament.fromJSON(data.tournament);
-                bracketRenderer = new BracketRenderer(tournament, bracketContainer);
-                bracketRenderer.render();
+                
+                if (data.useGroupStage) {
+                    useGroupStageCheckbox.checked = true;
+                    groupStageOptions.classList.remove('hidden');
+                    groupStage = GroupStage.fromJSON(data.groupStage);
+                } else {
+                    useGroupStageCheckbox.checked = false;
+                    groupStageOptions.classList.add('hidden');
+                    groupStage = null;
+                }
+
+                if (data.tournament) {
+                    tournament = Tournament.fromJSON(data.tournament);
+                    bracketRenderer = new BracketRenderer(tournament, bracketContainer, groupStage);
+                    bracketRenderer.render();
+                }
+
+                if (useGroupStageCheckbox.checked) {
+                    previewGroups();
+                }
+
                 saveData();
             } catch (error) {
                 alert('Lỗi khi đọc file: ' + error.message);
@@ -135,14 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Auto-save when bracket is updated
-    const autoSave = () => {
-        if (tournament && bracketRenderer) {
-            saveData();
-        }
-    };
-
-    // Create a MutationObserver to watch for changes in the bracket container
-    const observer = new MutationObserver(autoSave);
+    const observer = new MutationObserver(saveData);
     observer.observe(bracketContainer, { 
         childList: true, 
         subtree: true, 
