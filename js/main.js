@@ -13,37 +13,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load saved data from localStorage
     const loadSavedData = () => {
-        const savedTeams = localStorage.getItem('teams');
-        const savedTournament = localStorage.getItem('tournament');
+        const savedData = localStorage.getItem('tournamentData');
         
-        if (savedTeams) {
-            teamInput.value = savedTeams;
-        }
-        
-        if (savedTournament) {
+        if (savedData) {
             try {
-                tournament = Tournament.fromJSON(JSON.parse(savedTournament));
-                bracketRenderer = new BracketRenderer(tournament, bracketContainer);
-                bracketRenderer.render();
+                const data = JSON.parse(savedData);
+                teamInput.value = data.teams;
+                
+                if (data.tournament) {
+                    tournament = Tournament.fromJSON(data.tournament);
+                    bracketRenderer = new BracketRenderer(tournament, bracketContainer);
+                    bracketRenderer.render();
+                }
             } catch (e) {
                 console.error('Error loading saved tournament:', e);
+                localStorage.removeItem('tournamentData');
             }
         }
     };
 
     // Save data to localStorage
     const saveData = () => {
-        localStorage.setItem('teams', teamInput.value);
-        if (tournament) {
-            localStorage.setItem('tournament', JSON.stringify(tournament.toJSON()));
-        }
+        const data = {
+            teams: teamInput.value,
+            tournament: tournament ? tournament.toJSON() : null
+        };
+        localStorage.setItem('tournamentData', JSON.stringify(data));
     };
 
     // Clear all data
     clearButton.addEventListener('click', () => {
         if (confirm('Bạn có chắc chắn muốn xóa tất cả dữ liệu?')) {
-            localStorage.removeItem('teams');
-            localStorage.removeItem('tournament');
+            localStorage.removeItem('tournamentData');
             teamInput.value = '';
             tournament = null;
             bracketContainer.innerHTML = '';
@@ -78,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Tạo giải đấu với thứ tự hiện tại (không xáo trộn)
         tournament = new Tournament(teams, true);
         bracketRenderer = new BracketRenderer(tournament, bracketContainer);
         bracketRenderer.render();
@@ -132,6 +132,22 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.readAsText(file);
         importFile.value = ''; // Reset file input
+    });
+
+    // Auto-save when bracket is updated
+    const autoSave = () => {
+        if (tournament && bracketRenderer) {
+            saveData();
+        }
+    };
+
+    // Create a MutationObserver to watch for changes in the bracket container
+    const observer = new MutationObserver(autoSave);
+    observer.observe(bracketContainer, { 
+        childList: true, 
+        subtree: true, 
+        attributes: true, 
+        characterData: true 
     });
 
     // Load saved data when page loads

@@ -1,9 +1,56 @@
 class Tournament {
-    constructor(teams, preserveOrder = false) {
+    constructor(teams, preserveOrder = false, savedMatches = null) {
         this.originalTeams = teams;
         this.requiredTeams = nextPowerOfTwo(teams.length);
         this.rounds = Math.log2(this.requiredTeams);
-        this.matches = this.generateTournamentStructure(preserveOrder);
+        
+        if (savedMatches) {
+            // Khôi phục trạng thái từ dữ liệu đã lưu
+            this.matches = this.restoreMatches(savedMatches);
+        } else {
+            // Tạo mới cấu trúc giải đấu
+            this.matches = this.generateTournamentStructure(preserveOrder);
+        }
+    }
+
+    restoreMatches(savedMatches) {
+        // Khôi phục ID và trạng thái cho mỗi trận đấu
+        return savedMatches.map((round, roundIndex) => {
+            return round.map((match, matchIndex) => {
+                const restoredMatch = {
+                    id: match.id || generateMatchId(roundIndex, matchIndex),
+                    team1: this.restoreTeam(match.team1, roundIndex, matchIndex, 1),
+                    team2: this.restoreTeam(match.team2, roundIndex, matchIndex, 2),
+                    winner: null
+                };
+
+                // Khôi phục đội thắng nếu có
+                if (match.winner) {
+                    restoredMatch.winner = restoredMatch.team1.id === match.winner.id 
+                        ? restoredMatch.team1 
+                        : restoredMatch.team2;
+                }
+
+                return restoredMatch;
+            });
+        });
+    }
+
+    restoreTeam(team, roundIndex, matchIndex, teamNumber) {
+        if (!team || !team.name) {
+            return {
+                name: null,
+                score: 0,
+                id: generateTeamId(generateMatchId(roundIndex, matchIndex), teamNumber)
+            };
+        }
+
+        return {
+            name: team.name,
+            score: team.score || 0,
+            id: team.id || generateTeamId(generateMatchId(roundIndex, matchIndex), teamNumber),
+            isBye: team.isBye || team.name.startsWith('Bye ')
+        };
     }
 
     generateTournamentStructure(preserveOrder = false) {
@@ -137,8 +184,6 @@ class Tournament {
     }
 
     static fromJSON(data) {
-        const tournament = new Tournament(data.originalTeams, true);
-        tournament.matches = data.matches;
-        return tournament;
+        return new Tournament(data.originalTeams, true, data.matches);
     }
 } 
