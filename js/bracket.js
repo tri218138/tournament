@@ -95,10 +95,10 @@ class BracketRenderer {
             matchElement.innerHTML = `
                 <div class="match-teams">
                     <span class="team-name">${match.team1}</span>
-                    <input type="number" value="${match.score1 || ''}" min="0" 
+                    <input type="number" value="${match.score1 !== null ? match.score1 : ''}" min="0" 
                         data-group="${group.name}" data-match="${index}" data-team="1">
                     <span>-</span>
-                    <input type="number" value="${match.score2 || ''}" min="0"
+                    <input type="number" value="${match.score2 !== null ? match.score2 : ''}" min="0"
                         data-group="${group.name}" data-match="${index}" data-team="2">
                     <span class="team-name">${match.team2}</span>
                 </div>
@@ -162,11 +162,11 @@ class BracketRenderer {
         matchElement.dataset.matchId = match.id;
 
         // Team 1
-        const team1Element = this.createTeamElement(match.team1, match, roundIndex, matchIndex, 1);
+        const team1Element = this.createTeamElement(match.team1, match, roundIndex, matchIndex, 1, matchElement);
         matchElement.appendChild(team1Element);
 
         // Team 2
-        const team2Element = this.createTeamElement(match.team2, match, roundIndex, matchIndex, 2);
+        const team2Element = this.createTeamElement(match.team2, match, roundIndex, matchIndex, 2, matchElement);
         matchElement.appendChild(team2Element);
 
         // Connector line
@@ -179,7 +179,7 @@ class BracketRenderer {
         return matchElement;
     }
 
-    createTeamElement(team, match, roundIndex, matchIndex, teamNumber) {
+    createTeamElement(team, match, roundIndex, matchIndex, teamNumber, matchElement) {
         const teamElement = document.createElement('div');
         teamElement.className = 'team';
         teamElement.dataset.teamId = team.id;
@@ -192,7 +192,7 @@ class BracketRenderer {
 
             teamElement.innerHTML = `
                 <span class="team-name">${team.name}</span>
-                <input type="number" class="score-input" value="${team.score}" min="0" ${team.isBye ? 'disabled' : ''}>
+                <input type="number" class="score-input" value="${team.score || ''}" min="0" ${team.isBye ? 'disabled' : ''}>
             `;
 
             // Thêm các class và event listeners cho team element
