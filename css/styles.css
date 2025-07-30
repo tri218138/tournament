@@ -1,0 +1,108 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    padding: 20px;
+    background-color: #f0f2f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.input-section {
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+button {
+    background-color: #1a73e8;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    background-color: #1557b0;
+}
+
+.bracket-container {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.round {
+    display: flex;
+    flex-direction: column;
+    margin: 0 20px;
+}
+
+.match {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0;
+}
+
+.team {
+    padding: 10px;
+    min-width: 200px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    margin: 2px 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+}
+
+.team:hover {
+    background: #e9ecef;
+}
+
+.team.winner {
+    background: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.team.loser {
+    opacity: 0.6;
+}
+
+.score-input {
+    width: 40px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    margin-left: 10px;
+}
+
+.connector {
+    flex-grow: 1;
+    border-right: 2px solid #ddd;
+    margin: 0 10px;
+} 

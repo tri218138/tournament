@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Bracket</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="input-section">
+            <h2>Nhập danh sách đội thi đấu</h2>
+            <textarea id="teamInput" rows="10" placeholder="Nhập tên các đội, mỗi đội một dòng"></textarea>
+            <button id="generateBracket">Tạo sơ đồ thi đấu</button>
+        </div>
+        <div id="bracketContainer" class="bracket-container"></div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/tournament.js"></script>
+    <script src="js/bracket.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 
