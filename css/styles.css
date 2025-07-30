@@ -91,6 +91,14 @@ button#clearData:hover {
     background-color: #c82333;
 }
 
+button#shuffleTeams {
+    background-color: #8e44ad;
+}
+
+button#shuffleTeams:hover {
+    background-color: #6c3483;
+}
+
 button#exportData {
     background-color: #28a745;
 }
