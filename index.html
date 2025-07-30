@@ -16,7 +16,24 @@
                     <input type="checkbox" id="useGroupStage"> Sử dụng vòng bảng
                 </label>
                 <div id="groupStageOptions" class="hidden">
-                    <p>Số đội mỗi bảng: <span id="teamsPerGroup">4</span></p>
+                    <div class="group-config">
+                        <label>
+                            Số lượng bảng:
+                            <select id="groupCount">
+                                <option value="1">1 bảng</option>
+                                <option value="2">2 bảng</option>
+                                <option value="4" selected>4 bảng</option>
+                                <option value="8">8 bảng</option>
+                            </select>
+                        </label>
+                        <label>
+                            Số đội vào vòng trong từ mỗi bảng:
+                            <select id="qualifiedCount">
+                                <option value="1">1 đội</option>
+                                <option value="2" selected>2 đội</option>
+                            </select>
+                        </label>
+                    </div>
                     <div class="group-preview">
                         <div class="group-list"></div>
                     </div>

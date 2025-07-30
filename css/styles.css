@@ -271,4 +271,29 @@ button#importData:hover {
 
 .hidden {
     display: none;
+}
+
+.group-config {
+    margin: 10px 0;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.group-config label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.group-config select {
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 100px;
 } 

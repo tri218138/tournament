@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const bracketContainer = document.getElementById('bracketContainer');
     const useGroupStageCheckbox = document.getElementById('useGroupStage');
     const groupStageOptions = document.getElementById('groupStageOptions');
+    const groupCountSelect = document.getElementById('groupCount');
+    const qualifiedCountSelect = document.getElementById('qualifiedCount');
 
     let tournament = null;
     let bracketRenderer = null;
@@ -20,18 +22,21 @@ document.addEventListener('DOMContentLoaded', () => {
         previewGroups();
     });
 
-    // Preview groups when teams change
-    teamInput.addEventListener('input', () => {
-        if (useGroupStageCheckbox.checked) {
-            previewGroups();
-        }
+    // Update preview when configuration changes
+    [teamInput, groupCountSelect].forEach(element => {
+        element.addEventListener('input', () => {
+            if (useGroupStageCheckbox.checked) {
+                previewGroups();
+            }
+        });
     });
 
     function previewGroups() {
         const teams = getTeamsList();
         if (teams.length < 2) return;
 
-        const tempGroupStage = new GroupStage(teams);
+        const groupCount = parseInt(groupCountSelect.value);
+        const tempGroupStage = new GroupStage(teams, groupCount);
         const groupList = document.querySelector('.group-list');
         groupList.innerHTML = '';
 
@@ -40,7 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
             groupElement.className = 'group';
             groupElement.innerHTML = `
                 <h4>Bảng ${group.name}</h4>
-                ${group.teams.map(team => `<div class="group-team">${team}</div>`).join('')}
+                ${group.teams.map(team => `
+                    <div class="group-team ${team.startsWith('Bye ') ? 'bye' : ''}">${team}</div>
+                `).join('')}
             `;
             groupList.appendChild(groupElement);
         });
@@ -65,6 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.useGroupStage) {
                     useGroupStageCheckbox.checked = true;
                     groupStageOptions.classList.remove('hidden');
+                    groupCountSelect.value = data.groupCount || '4';
+                    qualifiedCountSelect.value = data.qualifiedCount || '2';
                     groupStage = GroupStage.fromJSON(data.groupStage);
                 }
                 
@@ -89,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {
             teams: teamInput.value,
             useGroupStage: useGroupStageCheckbox.checked,
+            groupCount: groupCountSelect.value,
+            qualifiedCount: qualifiedCountSelect.value,
             groupStage: groupStage ? groupStage.toJSON() : null,
             tournament: tournament ? tournament.toJSON() : null
         };
@@ -105,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
             bracketContainer.innerHTML = '';
             useGroupStageCheckbox.checked = false;
             groupStageOptions.classList.add('hidden');
+            groupCountSelect.value = '4';
+            qualifiedCountSelect.value = '2';
         }
     });
 
@@ -132,11 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (useGroupStageCheckbox.checked) {
+            const groupCount = parseInt(groupCountSelect.value);
+            const qualifiedCount = parseInt(qualifiedCountSelect.value);
+
             // Khởi tạo vòng bảng
-            groupStage = new GroupStage(teams);
+            groupStage = new GroupStage(teams, groupCount);
             
-            // Tạo giải đấu loại trực tiếp với 2 đội đứng đầu mỗi bảng
-            const qualifiedTeams = groupStage.getTopTeams(2);
+            // Tạo giải đấu loại trực tiếp với số đội đứng đầu mỗi bảng
+            const qualifiedTeams = groupStage.getTopTeams(qualifiedCount);
             tournament = new Tournament(qualifiedTeams, true);
         } else {
             // Tạo giải đấu loại trực tiếp với tất cả các đội
@@ -159,6 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {
             teams: teamInput.value,
             useGroupStage: useGroupStageCheckbox.checked,
+            groupCount: groupCountSelect.value,
+            qualifiedCount: qualifiedCountSelect.value,
             groupStage: groupStage ? groupStage.toJSON() : null,
             tournament: tournament ? tournament.toJSON() : null
         };
@@ -192,6 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.useGroupStage) {
                     useGroupStageCheckbox.checked = true;
                     groupStageOptions.classList.remove('hidden');
+                    groupCountSelect.value = data.groupCount || '4';
+                    qualifiedCountSelect.value = data.qualifiedCount || '2';
                     groupStage = GroupStage.fromJSON(data.groupStage);
                 } else {
                     useGroupStageCheckbox.checked = false;
