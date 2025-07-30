@@ -38,34 +38,60 @@ class BracketRenderer {
 
         // Cập nhật các cặp đấu vòng đầu tiên
         firstRound.forEach((match, index) => {
+            const oldTeam1 = match.team1;
+            const oldTeam2 = match.team2;
+
             if (index * 2 < qualifiedTeams.length) {
                 match.team1 = {
                     name: qualifiedTeams[index * 2],
-                    score: 0,
-                    id: generateTeamId(match.id, 1),
+                    score: oldTeam1?.score || 0,
+                    id: oldTeam1?.id || generateTeamId(match.id, 1),
                     isBye: false
                 };
             }
             if (index * 2 + 1 < qualifiedTeams.length) {
                 match.team2 = {
                     name: qualifiedTeams[index * 2 + 1],
-                    score: 0,
-                    id: generateTeamId(match.id, 2),
+                    score: oldTeam2?.score || 0,
+                    id: oldTeam2?.id || generateTeamId(match.id, 2),
                     isBye: false
                 };
             }
 
-            // Reset winner nếu có
-            match.winner = null;
+            // Reset winner chỉ khi các đội thay đổi
+            if (oldTeam1?.name !== match.team1?.name || oldTeam2?.name !== match.team2?.name) {
+                match.winner = null;
+            }
         });
 
-        // Reset các vòng tiếp theo
-        for (let i = 1; i < this.tournament.matches.length; i++) {
-            this.tournament.matches[i].forEach(match => {
-                match.team1 = { name: null, score: 0, id: generateTeamId(match.id, 1) };
-                match.team2 = { name: null, score: 0, id: generateTeamId(match.id, 2) };
-                match.winner = null;
-            });
+        // Reset các vòng tiếp theo chỉ khi cần thiết
+        let needReset = false;
+        for (const match of firstRound) {
+            if (!match.winner) {
+                needReset = true;
+                break;
+            }
+        }
+
+        if (needReset) {
+            for (let i = 1; i < this.tournament.matches.length; i++) {
+                this.tournament.matches[i].forEach(match => {
+                    const oldTeam1 = match.team1;
+                    const oldTeam2 = match.team2;
+
+                    match.team1 = {
+                        name: null,
+                        score: oldTeam1?.score || 0,
+                        id: oldTeam1?.id || generateTeamId(match.id, 1)
+                    };
+                    match.team2 = {
+                        name: null,
+                        score: oldTeam2?.score || 0,
+                        id: oldTeam2?.id || generateTeamId(match.id, 2)
+                    };
+                    match.winner = null;
+                });
+            }
         }
     }
 
@@ -291,7 +317,7 @@ class BracketRenderer {
 
             teamElement.innerHTML = `
                 <span class="team-name">${team.name}</span>
-                <input type="number" class="score-input" value="${team.score || ''}" min="0" step="1" ${team.isBye ? 'disabled' : ''}>
+                <input type="number" class="score-input" value="${team.score !== null ? team.score : ''}" min="0" step="1" ${team.isBye ? 'disabled' : ''}>
             `;
 
             // Thêm các class và event listeners cho team element
@@ -318,6 +344,10 @@ class BracketRenderer {
                 if (isNaN(score1) || isNaN(score2)) {
                     return;
                 }
+
+                // Cập nhật điểm số cho cả hai đội
+                match.team1.score = score1;
+                match.team2.score = score2;
 
                 if (score1 !== score2) {
                     const winner = score1 > score2 ? match.team1 : match.team2;
