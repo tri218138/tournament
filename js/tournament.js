@@ -1,38 +1,52 @@
 class Tournament {
-    constructor(teams) {
+    constructor(teams, preserveOrder = false) {
         this.originalTeams = teams;
         this.requiredTeams = nextPowerOfTwo(teams.length);
         this.rounds = Math.log2(this.requiredTeams);
-        this.matches = this.generateTournamentStructure();
+        this.matches = this.generateTournamentStructure(preserveOrder);
     }
 
-    generateTournamentStructure() {
+    generateTournamentStructure(preserveOrder = false) {
         // Tạo danh sách đội đầy đủ với các đội "bye"
         const byeTeams = generateByeTeams(this.originalTeams, this.requiredTeams);
         const allTeams = [...this.originalTeams, ...byeTeams];
         
-        // Xáo trộn thứ tự các đội
-        const shuffledTeams = shuffleArray([...allTeams]);
+        // Xáo trộn thứ tự các đội nếu không yêu cầu giữ nguyên thứ tự
+        const finalTeams = preserveOrder ? allTeams : shuffleArray([...allTeams]);
         
         // Khởi tạo cấu trúc giải đấu
         const rounds = [];
         
         // Vòng đầu tiên
         const firstRound = [];
-        for (let i = 0; i < shuffledTeams.length; i += 2) {
+        for (let i = 0; i < finalTeams.length; i += 2) {
+            const team1 = {
+                name: finalTeams[i],
+                score: 0,
+                id: generateTeamId(generateMatchId(0, firstRound.length), 1),
+                isBye: finalTeams[i].startsWith('Bye ')
+            };
+            
+            const team2 = {
+                name: finalTeams[i + 1],
+                score: 0,
+                id: generateTeamId(generateMatchId(0, firstRound.length), 2),
+                isBye: finalTeams[i + 1].startsWith('Bye ')
+            };
+
+            // Nếu một trong hai đội là bye, đội còn lại tự động thắng
+            let winner = null;
+            if (team1.isBye && !team2.isBye) {
+                winner = team2;
+            } else if (!team1.isBye && team2.isBye) {
+                winner = team1;
+            }
+
             firstRound.push({
                 id: generateMatchId(0, firstRound.length),
-                team1: {
-                    name: shuffledTeams[i],
-                    score: 0,
-                    id: generateTeamId(generateMatchId(0, firstRound.length), 1)
-                },
-                team2: {
-                    name: shuffledTeams[i + 1],
-                    score: 0,
-                    id: generateTeamId(generateMatchId(0, firstRound.length), 2)
-                },
-                winner: null
+                team1,
+                team2,
+                winner
             });
         }
         rounds.push(firstRound);
@@ -51,6 +65,30 @@ class Tournament {
                 });
             }
             rounds.push(currentRound);
+
+            // Cập nhật các trận có đội thắng từ vòng trước do có bye
+            for (let i = 0; i < previousRound.length; i += 2) {
+                const match1 = previousRound[i];
+                const match2 = previousRound[i + 1];
+                const nextMatch = currentRound[Math.floor(i / 2)];
+
+                if (match1.winner) {
+                    nextMatch.team1 = {
+                        name: match1.winner.name,
+                        score: 0,
+                        id: generateTeamId(nextMatch.id, 1),
+                        isBye: match1.winner.isBye
+                    };
+                }
+                if (match2.winner) {
+                    nextMatch.team2 = {
+                        name: match2.winner.name,
+                        score: 0,
+                        id: generateTeamId(nextMatch.id, 2),
+                        isBye: match2.winner.isBye
+                    };
+                }
+            }
         }
 
         return rounds;
@@ -58,6 +96,12 @@ class Tournament {
 
     updateMatch(roundIndex, matchIndex, winnerTeam, team1Score, team2Score) {
         const match = this.matches[roundIndex][matchIndex];
+        
+        // Không cho phép chọn đội bye làm đội thắng
+        if (winnerTeam.isBye) {
+            return;
+        }
+
         match.team1.score = team1Score;
         match.team2.score = team2Score;
         match.winner = winnerTeam;
@@ -71,15 +115,30 @@ class Tournament {
                 nextRoundMatch.team1 = {
                     name: winnerTeam.name,
                     score: 0,
-                    id: generateTeamId(nextRoundMatch.id, 1)
+                    id: generateTeamId(nextRoundMatch.id, 1),
+                    isBye: winnerTeam.isBye
                 };
             } else {
                 nextRoundMatch.team2 = {
                     name: winnerTeam.name,
                     score: 0,
-                    id: generateTeamId(nextRoundMatch.id, 2)
+                    id: generateTeamId(nextRoundMatch.id, 2),
+                    isBye: winnerTeam.isBye
                 };
             }
         }
+    }
+
+    toJSON() {
+        return {
+            originalTeams: this.originalTeams,
+            matches: this.matches
+        };
+    }
+
+    static fromJSON(data) {
+        const tournament = new Tournament(data.originalTeams, true);
+        tournament.matches = data.matches;
+        return tournament;
     }
 } 

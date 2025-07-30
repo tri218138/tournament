@@ -33,6 +33,12 @@ textarea {
     font-size: 14px;
 }
 
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
 button {
     background-color: #1a73e8;
     color: white;
@@ -41,10 +47,35 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
+    flex: 1;
 }
 
 button:hover {
     background-color: #1557b0;
+}
+
+button#clearData {
+    background-color: #dc3545;
+}
+
+button#clearData:hover {
+    background-color: #c82333;
+}
+
+button#exportData {
+    background-color: #28a745;
+}
+
+button#exportData:hover {
+    background-color: #218838;
+}
+
+button#importData {
+    background-color: #17a2b8;
+}
+
+button#importData:hover {
+    background-color: #138496;
 }
 
 .bracket-container {
@@ -91,6 +122,11 @@ button:hover {
 
 .team.loser {
     opacity: 0.6;
+}
+
+.team.bye {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .score-input {

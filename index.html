@@ -11,7 +11,16 @@
         <div class="input-section">
             <h2>Nhập danh sách đội thi đấu</h2>
             <textarea id="teamInput" rows="10" placeholder="Nhập tên các đội, mỗi đội một dòng"></textarea>
-            <button id="generateBracket">Tạo sơ đồ thi đấu</button>
+            <div class="button-group">
+                <button id="shuffleTeams">Xáo trộn danh sách</button>
+                <button id="generateBracket">Tạo sơ đồ thi đấu</button>
+                <button id="clearData">Xóa dữ liệu</button>
+            </div>
+            <div class="button-group">
+                <button id="exportData">Xuất dữ liệu</button>
+                <button id="importData">Nhập dữ liệu</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
         </div>
         <div id="bracketContainer" class="bracket-container"></div>
     </div>
