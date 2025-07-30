@@ -1,7 +1,8 @@
 class GroupStage {
     constructor(teams, groupCount = 4) {
         this.teams = teams;
-        this.groupCount = Math.min(groupCount, teams.length);
+        // Đảm bảo số lượng bảng không vượt quá số đội
+        this.groupCount = Math.min(groupCount, Math.floor(teams.length / 2));
         this.groups = this.createGroups();
         this.matches = this.generateMatches();
         this.standings = this.initializeStandings();
@@ -18,8 +19,8 @@ class GroupStage {
             const endIdx = Math.min(startIdx + teamsPerGroup, this.teams.length);
             const groupTeams = this.teams.slice(startIdx, endIdx);
             
-            // Thêm các đội "bye" nếu số đội trong bảng chưa đủ
-            while (groupTeams.length < teamsPerGroup && groupTeams.length < 4) {
+            // Thêm các đội "bye" nếu số đội trong bảng chưa đủ tối thiểu 2 đội
+            while (groupTeams.length < 2) {
                 groupTeams.push(`Bye ${groupName}${groupTeams.length + 1}`);
             }
             
@@ -158,14 +159,35 @@ class GroupStage {
 
     getTopTeams(count = 2) {
         const qualifiedTeams = [];
-        
+        const realGroups = this.groups.filter(group => {
+            // Đếm số đội thật trong bảng
+            const realTeamCount = group.teams.filter(team => !team.startsWith('Bye ')).length;
+            return realTeamCount >= 2; // Chỉ lấy các bảng có ít nhất 2 đội thật
+        });
+
         // Lấy số đội yêu cầu từ mỗi bảng
-        this.groups.forEach(group => {
+        realGroups.forEach(group => {
             const groupStandings = this.standings[group.name];
             // Lọc bỏ các đội bye trước khi lấy top teams
             const realTeams = groupStandings.filter(s => !s.team.startsWith('Bye '));
-            qualifiedTeams.push(...realTeams.slice(0, count).map(s => s.team));
+            // Chỉ lấy số lượng đội theo yêu cầu và đảm bảo có đội thật
+            const topTeams = realTeams.slice(0, count);
+            if (topTeams.length > 0) {
+                qualifiedTeams.push(...topTeams.map(s => s.team));
+            }
         });
+
+        // Nếu không có đội nào vượt qua vòng bảng, trả về mảng rỗng
+        if (qualifiedTeams.length === 0) {
+            return [];
+        }
+
+        // Nếu số đội vượt qua vòng bảng không phải là lũy thừa của 2,
+        // thêm các đội "bye" để đủ số lượng
+        const requiredTeams = nextPowerOfTwo(qualifiedTeams.length);
+        while (qualifiedTeams.length < requiredTeams) {
+            qualifiedTeams.push(`Bye Q${qualifiedTeams.length + 1}`);
+        }
 
         return qualifiedTeams;
     }
@@ -174,76 +196,17 @@ class GroupStage {
         return {
             teams: this.teams,
             groupCount: this.groupCount,
-            groups: this.groups.map(group => ({
-                name: group.name,
-                teams: group.teams
-            })),
-            matches: this.matches.map(groupMatches => ({
-                group: groupMatches.group,
-                matches: groupMatches.matches.map(match => ({
-                    group: match.group,
-                    team1: match.team1,
-                    team2: match.team2,
-                    score1: match.score1,
-                    score2: match.score2,
-                    played: match.played
-                }))
-            })),
-            standings: Object.fromEntries(
-                Object.entries(this.standings).map(([groupName, standings]) => [
-                    groupName,
-                    standings.map(team => ({
-                        team: team.team,
-                        played: team.played,
-                        won: team.won,
-                        drawn: team.drawn,
-                        lost: team.lost,
-                        goalsFor: team.goalsFor,
-                        goalsAgainst: team.goalsAgainst,
-                        goalDifference: team.goalDifference,
-                        points: team.points
-                    }))
-                ])
-            )
+            groups: this.groups,
+            matches: this.matches,
+            standings: this.standings
         };
     }
 
     static fromJSON(data) {
         const groupStage = new GroupStage(data.teams, data.groupCount);
-        groupStage.groups = data.groups.map(group => ({
-            name: group.name,
-            teams: group.teams
-        }));
-
-        groupStage.matches = data.matches.map(groupMatches => ({
-            group: groupMatches.group,
-            matches: groupMatches.matches.map(match => ({
-                group: match.group,
-                team1: match.team1,
-                team2: match.team2,
-                score1: match.score1,
-                score2: match.score2,
-                played: match.played
-            }))
-        }));
-
-        groupStage.standings = Object.fromEntries(
-            Object.entries(data.standings).map(([groupName, standings]) => [
-                groupName,
-                standings.map(team => ({
-                    team: team.team,
-                    played: team.played,
-                    won: team.won,
-                    drawn: team.drawn,
-                    lost: team.lost,
-                    goalsFor: team.goalsFor,
-                    goalsAgainst: team.goalsAgainst,
-                    goalDifference: team.goalDifference,
-                    points: team.points
-                }))
-            ])
-        );
-
+        groupStage.groups = data.groups;
+        groupStage.matches = data.matches;
+        groupStage.standings = data.standings;
         return groupStage;
     }
 } 
